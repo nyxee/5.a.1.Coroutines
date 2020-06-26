@@ -4,29 +4,28 @@ import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.system.measureTimeMillis
 
 
 class MainActivity : AppCompatActivity() {
     private val RESULT_2 = "Result #2"
     private val RESULT_1 = "Result #1"
-    private var jobCount = 1
+    private var jobCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         button.setOnClickListener {
-            CoroutineScope(IO).launch {
-                fakeAPIRequest()
-            }
-            fakeAPIRequest2()
+            logThread("buttonClick")
+//            CoroutineScope(IO).launch {
+//                fakeAPIRequest()
+//            }
+//            fakeAPIRequest2()
+            fakeAPIRequest3()
         }
         text.movementMethod = ScrollingMovementMethod()
 
@@ -56,10 +55,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun fakeAPIRequest2() {
         CoroutineScope(IO).launch {
+            val job3 = launch {
+                incrementCount()
+            }
+            job3.join()
+
             val job1 = launch{
                 val time = measureTimeMillis {
                     println("debug: Launching Job1 in THREAD:: ${Thread.currentThread().name}")
-                    val result = "JOB: $jobCount -> ${getAPIResult()}"
+                    val result = "JOB: $jobCount  -> ${getAPIResult()}"
                     println("debug: $result}")
                     setTextOnMainThread(result)
                 }
@@ -75,11 +79,44 @@ class MainActivity : AppCompatActivity() {
                 }
                 println("debug: Completed Job2 in $time sec")
             }
-
-            incrementCount()
+//            job1.join()
+//            job2.join()S
         }
     }
 
+    private fun fakeAPIRequest3() {
+        CoroutineScope(IO).launch {
+
+                val executionTime = measureTimeMillis {
+                    val currentCount: Deferred<Int> = async {
+                        incrementCount()
+                        jobCount
+                    }
+                    val thisJobCount = currentCount.await()
+                    println("debug: currentCount -> $thisJobCount")
+
+                    val result1:Deferred<String> = async {
+                        println("debug: Launching Job1 in THREAD:: ${Thread.currentThread().name}")
+                        "JOB: $jobCount, $thisJobCount -> ${getAPIResult()}"
+                    }
+
+                    setTextOnMainThread(result1.await())
+                    println("debug: $result1}")
+
+
+                    val result2:Deferred<String> = async {
+                        println("debug: Launching Job2 in THREAD:: ${Thread.currentThread().name}")
+                        "JOB: $jobCount, $thisJobCount -> ${getAPIResult2()}"
+                    }
+
+
+                    setTextOnMainThread(result2.await())
+                    println("debug: $result2}")
+                }
+                println("debug: Completed Jobs in $executionTime sec")
+
+        }
+    }
     private suspend fun incrementCount(){
         withContext(Main){
             logThread("incrementCount $jobCount")
@@ -89,7 +126,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun getAPIResult(): String {
-        logThread("getAPIResult")
+        logThread("getAPIResult1")
         delay(1000)
 
         return RESULT_1
