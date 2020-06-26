@@ -1,11 +1,17 @@
 package com.janus.a5a1coroutines
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.text.method.ScrollingMovementMethod
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.system.measureTimeMillis
+
 
 class MainActivity : AppCompatActivity() {
     private val RESULT_2 = "Result #2"
@@ -20,7 +26,10 @@ class MainActivity : AppCompatActivity() {
             CoroutineScope(IO).launch {
                 fakeAPIRequest()
             }
+            fakeAPIRequest2()
         }
+        text.movementMethod = ScrollingMovementMethod()
+
     }
 
     private suspend fun setNewText(input: String) {
@@ -45,8 +54,38 @@ class MainActivity : AppCompatActivity() {
         incrementCount()
     }
 
+    private fun fakeAPIRequest2() {
+        CoroutineScope(IO).launch {
+            val job1 = launch{
+                val time = measureTimeMillis {
+                    println("debug: Launching Job1 in THREAD:: ${Thread.currentThread().name}")
+                    val result = "JOB: $jobCount -> ${getAPIResult()}"
+                    println("debug: $result}")
+                    setTextOnMainThread(result)
+                }
+                println("debug: Completed Job1 in $time sec")
+            }
+
+            val job2 = launch{
+                val time = measureTimeMillis {
+                    println("debug: Launching Job2 in THREAD:: ${Thread.currentThread().name}")
+                    val result = "JOB: $jobCount -> ${getAPIResult2()}"
+                    println("debug: $result}")
+                    setTextOnMainThread(result)
+                }
+                println("debug: Completed Job2 in $time sec")
+            }
+
+            incrementCount()
+        }
+    }
+
     private suspend fun incrementCount(){
-        jobCount += 1
+        withContext(Main){
+            logThread("incrementCount $jobCount")
+            delay(1000)
+            jobCount += 1
+        }
     }
 
     private suspend fun getAPIResult(): String {
@@ -64,5 +103,6 @@ class MainActivity : AppCompatActivity() {
     }
     private fun logThread(methodName: String){
         println("debug: $methodName: ${Thread.currentThread().name}")
+
     }
 }
