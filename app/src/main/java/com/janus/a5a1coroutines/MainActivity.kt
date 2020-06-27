@@ -2,6 +2,7 @@ package com.janus.a5a1coroutines
 
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
@@ -19,16 +20,31 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        button.setOnClickListener {
-            logThread("buttonClick")
-//            CoroutineScope(IO).launch {
-//                fakeAPIRequest()
-//            }
-//            fakeAPIRequest2()
-            fakeAPIRequest3()
+        btnCount.setOnClickListener {
+            handleTaps(it)
+        }
+        conLayout.setOnClickListener {
+            handleTaps(it)
+        }
+        btnClear.setOnClickListener {
+            handleTaps(it)
         }
         text.movementMethod = ScrollingMovementMethod()
 
+    }
+
+    private fun handleTaps(view: View) {
+        if(view.id == btnClear.id){
+            text.text = ""
+            jobCount = 0
+        } else {
+            logThread("\t\tTAPPED")
+//            CoroutineScope(IO).launch {
+//                fakeAPIRequest()
+//            }
+            fakeAPIRequest2() //using corutine JOBS
+//            fakeAPIRequest3() //using corutine aync/await pattern
+        }
     }
 
     private suspend fun setNewText(input: String) {
@@ -114,32 +130,34 @@ class MainActivity : AppCompatActivity() {
                     println("debug: $result2}")
                 }
                 println("debug: Completed Jobs in $executionTime sec")
-
         }
     }
+
     private suspend fun incrementCount(){
         withContext(Main){
             logThread("incrementCount $jobCount")
-            delay(1000)
+            delay(delayPeriod)
             jobCount += 1
         }
     }
 
     private suspend fun getAPIResult(): String {
         logThread("getAPIResult1")
-        delay(1000)
+        delay(delayPeriod)
 
         return RESULT_1
     }
 
     private suspend fun getAPIResult2(): String {
         logThread("getAPIResult2")
-        delay(1000)
+        delay(delayPeriod)
 
         return RESULT_2
     }
     private fun logThread(methodName: String){
         println("debug: $methodName: ${Thread.currentThread().name}")
-
     }
+
+    private val delayPeriod = 5_000L
+
 }
